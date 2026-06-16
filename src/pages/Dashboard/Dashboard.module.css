@@ -78,3 +78,10 @@
   font-family: var(--font-mono);
   font-size: var(--text-sm);
 }
+
+.loading, .vazio {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-6) 0;
+}

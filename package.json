@@ -9,15 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "@tanstack/react-table": "^8.20.5",
+    "lucide-react": "^0.447.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2",
     "react-hook-form": "^7.53.0",
-    "@hookform/resolvers": "^3.9.0",
-    "zod": "^3.23.8",
-    "@tanstack/react-table": "^8.20.5",
+    "react-router-dom": "^6.26.2",
     "recharts": "^2.12.7",
-    "lucide-react": "^0.447.0"
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",

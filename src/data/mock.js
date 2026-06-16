@@ -131,3 +131,20 @@ export const consumoPorMedicamento = [
   { nome: 'Ibuprofeno',  quantidade: 90 },
   { nome: 'Omeprazol',   quantidade: 60 },
 ]
+
+export const estoqueVsMinimo = [
+  { nome: 'Paracetamol', atual: 240, minimo: 50 },
+  { nome: 'Amoxicilina', atual: 18,  minimo: 30 },
+  { nome: 'Ibuprofeno',  atual: 90,  minimo: 40 },
+  { nome: 'Dipirona',    atual: 5,   minimo: 60 },
+  { nome: 'Omeprazol',   atual: 130, minimo: 30 },
+]
+
+export const prescricoesPorMes = [
+  { mes: 'Abr', prescricoes: 8  },
+  { mes: 'Mai', prescricoes: 12 },
+  { mes: 'Jun', prescricoes: 9  },
+  { mes: 'Jul', prescricoes: 17 },
+  { mes: 'Ago', prescricoes: 14 },
+  { mes: 'Set', prescricoes: 21 },
+]

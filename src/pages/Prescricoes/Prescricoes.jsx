@@ -1,19 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, X, Calculator, ClipboardList } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import Badge from '../../components/ui/Badge.jsx'
-import { medicamentos, prescricoes as dadosIniciais } from '../../data/mock.js'
+import { getMedicamentos } from '../../services/medicamentosService'
+import { getPrescricoes, createPrescricao } from '../../services/prescricoesService'
 import styles from './Prescricoes.module.css'
 
 const schema = z.object({
-  paciente:      z.string().min(2, 'Nome do paciente obrigatório'),
-  medicamentoId: z.coerce.number().min(1, 'Selecione um medicamento'),
-  intervaloHoras:z.coerce.number().min(1, 'Intervalo deve ser ≥ 1h').max(24),
-  duracaoDias:   z.coerce.number().min(1, 'Duração deve ser ≥ 1 dia'),
-  observacoes:   z.string().optional(),
+  paciente:       z.string().min(2, 'Nome do paciente obrigatório'),
+  medicamento:    z.string().min(1, 'Selecione um medicamento'),
+  intervalo_horas:z.coerce.number().min(1).max(24),
+  duracao_dias:   z.coerce.number().min(1),
+  observacoes:    z.string().optional(),
 })
 
 function calcular(intervaloHoras, duracaoDias) {
@@ -24,37 +25,55 @@ function calcular(intervaloHoras, duracaoDias) {
 }
 
 export default function Prescricoes() {
-  const [lista, setLista] = useState(dadosIniciais)
-  const [modal, setModal] = useState(false)
+  const [lista, setLista]       = useState([])
+  const [medicamentos, setMeds] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [modal, setModal]       = useState(false)
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { intervaloHoras: 8, duracaoDias: 7 },
+    defaultValues: { intervalo_horas: 8, duracao_dias: 7 },
   })
 
-  const intervaloHoras = useWatch({ control, name: 'intervaloHoras' })
-  const duracaoDias    = useWatch({ control, name: 'duracaoDias' })
+  const intervaloHoras = useWatch({ control, name: 'intervalo_horas' })
+  const duracaoDias    = useWatch({ control, name: 'duracao_dias' })
   const calc = calcular(Number(intervaloHoras), Number(duracaoDias))
 
-  function onSubmit(data) {
-    const med = medicamentos.find(m => m.id === Number(data.medicamentoId))
-    const c = calcular(Number(data.intervaloHoras), Number(data.duracaoDias))
-    setLista(prev => [...prev, {
-      id: Date.now(),
-      paciente: data.paciente,
-      medicamentoId: data.medicamentoId,
-      medicamento: med ? `${med.nome} ${med.dosagem}` : '—',
-      dosagem: med?.dosagem ?? '',
-      intervaloHoras: data.intervaloHoras,
-      duracaoDias: data.duracaoDias,
-      totalDoses: c?.totalDoses ?? 0,
-      totalUnidades: c?.totalDoses ?? 0,
-      data: new Date().toISOString().split('T')[0],
-      status: 'ativa',
-      observacoes: data.observacoes ?? '',
-    }])
-    reset({ intervaloHoras: 8, duracaoDias: 7 })
-    setModal(false)
+  async function carregar() {
+    try {
+      const [prescs, meds] = await Promise.all([getPrescricoes(), getMedicamentos()])
+      setLista(prescs)
+      setMeds(meds)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { carregar() }, [])
+
+  async function onSubmit(data) {
+    const c = calcular(Number(data.intervalo_horas), Number(data.duracao_dias))
+    try {
+      await createPrescricao({
+        paciente:        data.paciente,
+        medicamento:     data.medicamento,
+        intervalo_horas: data.intervalo_horas,
+        duracao_dias:    data.duracao_dias,
+        total_doses:     c?.totalDoses ?? 0,
+        total_unidades:  c?.totalDoses ?? 0,
+        data:            new Date().toISOString().split('T')[0],
+        status:          'ativa',
+        observacoes:     data.observacoes ?? '',
+      })
+      await carregar()
+      reset({ intervalo_horas: 8, duracao_dias: 7 })
+      setModal(false)
+    } catch (e) {
+      console.error(e)
+      alert('Erro ao salvar. Veja o console.')
+    }
   }
 
   return (
@@ -62,51 +81,60 @@ export default function Prescricoes() {
 
       <div className={styles.toolbar}>
         <span className={styles.count}>{lista.length} prescrição(ões)</span>
-        <Button icon={Plus} onClick={() => { reset({ intervaloHoras: 8, duracaoDias: 7 }); setModal(true) }}>
+        <Button icon={Plus} onClick={() => {
+          reset({ intervalo_horas: 8, duracao_dias: 7 })
+          setModal(true)
+        }}>
           Nova Prescrição
         </Button>
       </div>
 
-      <div className={styles.cards}>
-        {lista.map(p => (
-          <div key={p.id} className={styles.card}>
-            <div className={styles.cardTop}>
-              <div>
-                <div className={styles.patientName}>{p.paciente}</div>
-                <div className={styles.medName}>{p.medicamento}</div>
+      {loading ? (
+        <div className={styles.empty}>Carregando...</div>
+      ) : (
+        <div className={styles.cards}>
+          {lista.map(p => (
+            <div key={p.id} className={styles.card}>
+              <div className={styles.cardTop}>
+                <div>
+                  <div className={styles.patientName}>{p.paciente}</div>
+                  <div className={styles.medName}>{p.medicamento}</div>
+                </div>
+                <Badge variant={p.status === 'ativa' ? 'success' : 'default'}>
+                  {p.status}
+                </Badge>
               </div>
-              <Badge variant={p.status === 'ativa' ? 'success' : 'default'}>
-                {p.status}
-              </Badge>
-            </div>
 
-            <div className={styles.cardGrid}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Intervalo</span>
-                <span className={styles.infoValue}>A cada {p.intervaloHoras}h</span>
+              <div className={styles.cardGrid}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Intervalo</span>
+                  <span className={styles.infoValue}>A cada {p.intervalo_horas}h</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Duração</span>
+                  <span className={styles.infoValue}>{p.duracao_dias} dias</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Total de Doses</span>
+                  <span className={styles.infoValue}>{p.total_doses}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Unidades Necessárias</span>
+                  <span className={`${styles.infoValue} ${styles.highlight}`}>{p.total_unidades}</span>
+                </div>
               </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Duração</span>
-                <span className={styles.infoValue}>{p.duracaoDias} dias</span>
-              </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Total de Doses</span>
-                <span className={styles.infoValue}>{p.totalDoses}</span>
-              </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Unidades Necessárias</span>
-                <span className={`${styles.infoValue} ${styles.highlight}`}>{p.totalUnidades}</span>
+
+              <div className={styles.cardFooter}>
+                <span className={styles.footerDate}>Prescrito em {p.data}</span>
               </div>
             </div>
+          ))}
+          {lista.length === 0 && (
+            <div className={styles.empty}>Nenhuma prescrição registrada.</div>
+          )}
+        </div>
+      )}
 
-            <div className={styles.cardFooter}>
-              <span className={styles.footerDate}>Prescrito em {p.data}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Modal */}
       {modal && (
         <div className={styles.overlay} onClick={() => setModal(false)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -129,31 +157,30 @@ export default function Prescricoes() {
 
               <div className={styles.field}>
                 <label>Medicamento *</label>
-                <select {...register('medicamentoId')}>
+                <select {...register('medicamento')}>
                   <option value="">Selecione o medicamento</option>
                   {medicamentos.map(m => (
-                    <option key={m.id} value={m.id}>
-                      {m.nome} {m.dosagem} — Estoque: {m.estoqueAtual}
+                    <option key={m.id} value={`${m.nome} ${m.dosagem}`}>
+                      {m.nome} {m.dosagem} — Estoque: {m.estoque_atual}
                     </option>
                   ))}
                 </select>
-                {errors.medicamentoId && <span className={styles.error}>{errors.medicamentoId.message}</span>}
+                {errors.medicamento && <span className={styles.error}>{errors.medicamento.message}</span>}
               </div>
 
               <div className={styles.row}>
                 <div className={styles.field}>
                   <label>Intervalo (horas) *</label>
-                  <input {...register('intervaloHoras')} type="number" min="1" max="24" placeholder="Ex: 8" />
-                  {errors.intervaloHoras && <span className={styles.error}>{errors.intervaloHoras.message}</span>}
+                  <input {...register('intervalo_horas')} type="number" min="1" max="24" placeholder="Ex: 8" />
+                  {errors.intervalo_horas && <span className={styles.error}>{errors.intervalo_horas.message}</span>}
                 </div>
                 <div className={styles.field}>
                   <label>Duração (dias) *</label>
-                  <input {...register('duracaoDias')} type="number" min="1" placeholder="Ex: 7" />
-                  {errors.duracaoDias && <span className={styles.error}>{errors.duracaoDias.message}</span>}
+                  <input {...register('duracao_dias')} type="number" min="1" placeholder="Ex: 7" />
+                  {errors.duracao_dias && <span className={styles.error}>{errors.duracao_dias.message}</span>}
                 </div>
               </div>
 
-              {/* Cálculo automático */}
               {calc && (
                 <div className={styles.calcBox}>
                   <div className={styles.calcHeader}>

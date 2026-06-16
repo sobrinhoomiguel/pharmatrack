@@ -1,14 +1,35 @@
+import { useEffect, useState } from 'react'
 import { Users } from 'lucide-react'
+import { supabase } from '../../services/supabase'
 import styles from './Usuarios.module.css'
 
-const USUARIOS = [
-  { id: 1, nome: 'Admin Geral',  email: 'admin@pharmatrack.com',  cargo: 'Administrador',  status: 'ativo' },
-  { id: 2, nome: 'Carla Moura',  email: 'carla@pharmatrack.com',  cargo: 'Farmacêutica',   status: 'ativo' },
-  { id: 3, nome: 'João Pinto',   email: 'joao@pharmatrack.com',   cargo: 'Operador',        status: 'ativo' },
-  { id: 4, nome: 'Paula Ramos',  email: 'paula@pharmatrack.com',  cargo: 'Farmacêutica',   status: 'inativo' },
-]
-
 export default function Usuarios() {
+  const [lista, setLista]   = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return
+      const { data, error } = await supabase.auth.admin.listUsers()
+      if (error) {
+        // fallback: mostra só o usuário logado
+        const { data: { user } } = await supabase.auth.getUser()
+        setLista(user ? [{ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email, cargo: user.user_metadata?.cargo || 'Administrador', status: 'ativo' }] : [])
+      } else {
+        setLista(data.users.map(u => ({
+          id: u.id,
+          email: u.email,
+          nome: u.user_metadata?.nome || u.email,
+          cargo: u.user_metadata?.cargo || 'Usuário',
+          status: u.banned_until ? 'inativo' : 'ativo',
+        })))
+      }
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return <div className={styles.empty}>Carregando...</div>
+
   return (
     <div className={styles.page}>
       <div className={styles.tableWrap}>
@@ -22,12 +43,12 @@ export default function Usuarios() {
             </tr>
           </thead>
           <tbody>
-            {USUARIOS.map(u => (
+            {lista.map(u => (
               <tr key={u.id}>
                 <td>
                   <div className={styles.userCell}>
-                    <div className={styles.avatar}>{u.nome[0]}</div>
-                    <span>{u.nome}</span>
+                    <div className={styles.avatar}>{(u.nome || u.email)[0].toUpperCase()}</div>
+                    <span>{u.nome || u.email}</span>
                   </div>
                 </td>
                 <td className={styles.muted}>{u.email}</td>
@@ -41,11 +62,9 @@ export default function Usuarios() {
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className={styles.comingSoon}>
-        <Users size={28} />
-        <p>Perfis de acesso e gestão avançada de usuários em breve.</p>
+        {lista.length === 0 && (
+          <div className={styles.empty}>Nenhum usuário encontrado.</div>
+        )}
       </div>
     </div>
   )

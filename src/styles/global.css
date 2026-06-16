@@ -3,32 +3,34 @@
    =========================== */
 :root {
   /* Palette */
-  --color-bg:          #0f1117;
-  --color-surface:     #171b26;
-  --color-surface-2:   #1e2333;
-  --color-border:      #2a2f42;
-  --color-border-soft: #232840;
+  --color-bg:          #f0f4fb;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #e8edf8;
+  --color-border:      #c8d3e8;
+  --color-border-soft: #d8e0f0;
 
-  --color-accent:      #4f7fff;
-  --color-accent-dim:  rgba(79, 127, 255, 0.12);
-  --color-accent-hover:#3d6ee8;
+  --color-accent:      #14328C;
+  --color-accent-dim:  rgba(20, 50, 140, 0.10);
+  --color-accent-hover:#0f2570;
 
-  --color-success:     #2dd98f;
-  --color-warning:     #f5a623;
-  --color-danger:      #e84040;
-  --color-info:        #4f7fff;
+  --color-success:     #1a9e6a;
+  --color-warning:     #c97d00;
+  --color-danger:      #cc2a2a;
+  --color-info:        #14328C;
 
-  --color-text:        #e8eaf2;
-  --color-text-muted:  #7b82a0;
-  --color-text-faint:  #4a5070;
+  --color-text:        #0d1a3a;
+  --color-text-muted:  #4a5a80;
+  --color-text-faint:  #8a99bb;
 
   /* Sidebar */
   --sidebar-w: 240px;
-  --sidebar-bg: #0d1018;
+  --sidebar-bg: #14328C;
 
   /* Typography */
   --font-body: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
+
+  /* resto permanece igual... */
 
   --text-xs:   0.75rem;
   --text-sm:   0.8125rem;

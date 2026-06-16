@@ -1,46 +1,65 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Search, Edit2, Trash2, X } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import Badge from '../../components/ui/Badge.jsx'
-import { medicamentos as dadosIniciais } from '../../data/mock.js'
+import {
+  getMedicamentos,
+  createMedicamento,
+  updateMedicamento,
+  deleteMedicamento,
+} from '../../services/medicamentosService'
 import styles from './Medicamentos.module.css'
 
-// ─── Schema ───────────────────────────────────────────────
 const schema = z.object({
-  nome:          z.string().min(2, 'Nome obrigatório'),
-  principioAtivo:z.string().min(2, 'Princípio ativo obrigatório'),
-  dosagem:       z.string().min(1, 'Dosagem obrigatória'),
-  unidade:       z.string().min(1, 'Unidade obrigatória'),
-  fabricante:    z.string().optional(),
-  lote:          z.string().optional(),
-  validade:      z.string().optional(),
-  estoqueAtual:  z.coerce.number().min(0, 'Estoque não pode ser negativo'),
-  estoqueMinimo: z.coerce.number().min(0, 'Estoque mínimo não pode ser negativo'),
-  observacoes:   z.string().optional(),
+  nome:            z.string().min(2, 'Nome obrigatório'),
+  principio_ativo: z.string().min(2, 'Princípio ativo obrigatório'),
+  dosagem:         z.string().min(1, 'Dosagem obrigatória'),
+  unidade:         z.string().min(1, 'Unidade obrigatória'),
+  fabricante:      z.string().optional(),
+  lote:            z.string().optional(),
+  validade:        z.string().optional(),
+  estoque_atual:   z.coerce.number().min(0),
+  estoque_minimo:  z.coerce.number().min(0),
+  observacoes:     z.string().optional(),
 })
 
 function statusEstoque(med) {
-  if (med.estoqueAtual === 0) return 'critico'
-  if (med.estoqueAtual <= med.estoqueMinimo) return med.estoqueAtual < med.estoqueMinimo * 0.5 ? 'critico' : 'baixo'
+  if (med.estoque_atual === 0) return 'critico'
+  if (med.estoque_atual <= med.estoque_minimo)
+    return med.estoque_atual < med.estoque_minimo * 0.5 ? 'critico' : 'baixo'
   return 'normal'
 }
 
 export default function Medicamentos() {
-  const [lista, setLista] = useState(dadosIniciais)
-  const [busca, setBusca]   = useState('')
-  const [modal, setModal]   = useState(false)
+  const [lista, setLista]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [busca, setBusca]       = useState('')
+  const [modal, setModal]       = useState(false)
   const [editando, setEditando] = useState(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
   })
 
+  async function carregar() {
+    try {
+      const data = await getMedicamentos()
+      setLista(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { carregar() }, [])
+
   const filtrado = lista.filter(m =>
     m.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    m.principioAtivo.toLowerCase().includes(busca.toLowerCase())
+    (m.principio_ativo ?? '').toLowerCase().includes(busca.toLowerCase())
   )
 
   function abrirNovo() {
@@ -61,25 +80,34 @@ export default function Medicamentos() {
     reset({})
   }
 
-  function onSubmit(data) {
-    if (editando) {
-      setLista(prev => prev.map(m => m.id === editando.id ? { ...m, ...data } : m))
-    } else {
-      setLista(prev => [...prev, { ...data, id: Date.now(), status: 'normal' }])
+  async function onSubmit(data) {
+    try {
+      if (editando) {
+        await updateMedicamento(editando.id, data)
+      } else {
+        await createMedicamento(data)
+      }
+      await carregar()
+      fecharModal()
+    } catch (e) {
+      console.error(e)
+      alert('Erro ao salvar. Veja o console.')
     }
-    fecharModal()
   }
 
-  function excluir(id) {
-    if (confirm('Excluir este medicamento?')) {
-      setLista(prev => prev.filter(m => m.id !== id))
+  async function excluir(id) {
+    if (!confirm('Excluir este medicamento?')) return
+    try {
+      await deleteMedicamento(id)
+      await carregar()
+    } catch (e) {
+      console.error(e)
     }
   }
 
   return (
     <div className={styles.page}>
 
-      {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.searchWrap}>
           <Search size={15} className={styles.searchIcon} />
@@ -93,58 +121,60 @@ export default function Medicamentos() {
         <Button icon={Plus} onClick={abrirNovo}>Novo Medicamento</Button>
       </div>
 
-      {/* Table */}
       <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Princípio Ativo</th>
-              <th>Dosagem</th>
-              <th>Fabricante</th>
-              <th>Validade</th>
-              <th>Estoque</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtrado.map(med => {
-              const st = statusEstoque(med)
-              return (
-                <tr key={med.id}>
-                  <td className={styles.nomeMed}>{med.nome}</td>
-                  <td className={styles.muted}>{med.principioAtivo}</td>
-                  <td className={styles.mono}>{med.dosagem}</td>
-                  <td className={styles.muted}>{med.fabricante}</td>
-                  <td className={styles.mono}>{med.validade}</td>
-                  <td className={styles.mono}>{med.estoqueAtual} / {med.estoqueMinimo}</td>
-                  <td>
-                    <Badge variant={st === 'normal' ? 'success' : st === 'baixo' ? 'warning' : 'danger'}>
-                      {st === 'normal' ? 'Normal' : st === 'baixo' ? 'Baixo' : 'Crítico'}
-                    </Badge>
-                  </td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button className={styles.actionBtn} onClick={() => abrirEditar(med)} title="Editar">
-                        <Edit2 size={14} />
-                      </button>
-                      <button className={`${styles.actionBtn} ${styles.del}`} onClick={() => excluir(med.id)} title="Excluir">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        {filtrado.length === 0 && (
+        {loading ? (
+          <div className={styles.empty}>Carregando...</div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Princípio Ativo</th>
+                <th>Dosagem</th>
+                <th>Fabricante</th>
+                <th>Validade</th>
+                <th>Estoque</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtrado.map(med => {
+                const st = statusEstoque(med)
+                return (
+                  <tr key={med.id}>
+                    <td className={styles.nomeMed}>{med.nome}</td>
+                    <td className={styles.muted}>{med.principio_ativo}</td>
+                    <td className={styles.mono}>{med.dosagem}</td>
+                    <td className={styles.muted}>{med.fabricante}</td>
+                    <td className={styles.mono}>{med.validade}</td>
+                    <td className={styles.mono}>{med.estoque_atual} / {med.estoque_minimo}</td>
+                    <td>
+                      <Badge variant={st === 'normal' ? 'success' : st === 'baixo' ? 'warning' : 'danger'}>
+                        {st === 'normal' ? 'Normal' : st === 'baixo' ? 'Baixo' : 'Crítico'}
+                      </Badge>
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button className={styles.actionBtn} onClick={() => abrirEditar(med)}>
+                          <Edit2 size={14} />
+                        </button>
+                        <button className={`${styles.actionBtn} ${styles.del}`} onClick={() => excluir(med.id)}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+        {!loading && filtrado.length === 0 && (
           <div className={styles.empty}>Nenhum medicamento encontrado.</div>
         )}
       </div>
 
-      {/* Modal */}
       {modal && (
         <div className={styles.overlay} onClick={fecharModal}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -166,8 +196,8 @@ export default function Medicamentos() {
                 </div>
                 <div className={styles.field}>
                   <label>Princípio Ativo *</label>
-                  <input {...register('principioAtivo')} placeholder="Ex: Paracetamol" />
-                  {errors.principioAtivo && <span className={styles.error}>{errors.principioAtivo.message}</span>}
+                  <input {...register('principio_ativo')} placeholder="Ex: Paracetamol" />
+                  {errors.principio_ativo && <span className={styles.error}>{errors.principio_ativo.message}</span>}
                 </div>
               </div>
 
@@ -210,16 +240,16 @@ export default function Medicamentos() {
                 </div>
                 <div className={styles.field}>
                   <label>Estoque Atual *</label>
-                  <input {...register('estoqueAtual')} type="number" min="0" />
-                  {errors.estoqueAtual && <span className={styles.error}>{errors.estoqueAtual.message}</span>}
+                  <input {...register('estoque_atual')} type="number" min="0" />
+                  {errors.estoque_atual && <span className={styles.error}>{errors.estoque_atual.message}</span>}
                 </div>
               </div>
 
               <div className={styles.row}>
                 <div className={styles.field}>
                   <label>Estoque Mínimo *</label>
-                  <input {...register('estoqueMinimo')} type="number" min="0" />
-                  {errors.estoqueMinimo && <span className={styles.error}>{errors.estoqueMinimo.message}</span>}
+                  <input {...register('estoque_minimo')} type="number" min="0" />
+                  {errors.estoque_minimo && <span className={styles.error}>{errors.estoque_minimo.message}</span>}
                 </div>
                 <div className={styles.field}>
                   <label>Observações</label>
