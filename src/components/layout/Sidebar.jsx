@@ -9,7 +9,7 @@ import { logout } from '../../services/authService'
 import styles from './Sidebar.module.css'
 
 const NAV = [
-  { to: '/dashboard',    label: 'Dashboard',   Icon: LayoutDashboard },
+  { to: '/',             label: 'Dashboard',   Icon: LayoutDashboard },
   { to: '/medicamentos', label: 'Medicamentos', Icon: Pill },
   { to: '/estoque',      label: 'Estoque',      Icon: Package },
   { to: '/prescricoes',  label: 'Prescrições',  Icon: ClipboardList },

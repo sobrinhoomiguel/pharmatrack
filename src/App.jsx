@@ -27,6 +27,7 @@ export default function App() {
           <Route path="/login" element={<Publico><Login /></Publico>} />
           <Route path="/" element={<Privado><Layout /></Privado>}>
             <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Navigate to="/" replace />} />
             <Route path="medicamentos" element={<Medicamentos />} />
             <Route path="estoque" element={<Estoque />} />
             <Route path="prescricoes" element={<Prescricoes />} />
@@ -37,4 +38,4 @@ export default function App() {
       </BrowserRouter>
     </AuthProvider>
   )
-}
+} 

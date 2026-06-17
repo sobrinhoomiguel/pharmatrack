@@ -10,11 +10,13 @@ import { getPrescricoes, createPrescricao } from '../../services/prescricoesServ
 import styles from './Prescricoes.module.css'
 
 const schema = z.object({
-  paciente:       z.string().min(2, 'Nome do paciente obrigatório'),
-  medicamento:    z.string().min(1, 'Selecione um medicamento'),
-  intervalo_horas:z.coerce.number().min(1).max(24),
-  duracao_dias:   z.coerce.number().min(1),
-  observacoes:    z.string().optional(),
+  paciente:        z.string().min(2, 'Nome do paciente obrigatório'),
+  medicamento:     z.string().min(1, 'Selecione um medicamento'),
+  intervalo_horas: z.coerce.number().min(1).max(24),
+  duracao_dias:    z.coerce.number().min(1),
+  medico_nome:     z.string().min(2, 'Nome do médico obrigatório'),
+  medico_crm:      z.string().min(3, 'CRM obrigatório'),
+  observacoes:     z.string().optional(),
 })
 
 function calcular(intervaloHoras, duracaoDias) {
@@ -63,6 +65,8 @@ export default function Prescricoes() {
         duracao_dias:    data.duracao_dias,
         total_doses:     c?.totalDoses ?? 0,
         total_unidades:  c?.totalDoses ?? 0,
+        medico_nome:     data.medico_nome,
+        medico_crm:      data.medico_crm,
         data:            new Date().toISOString().split('T')[0],
         status:          'ativa',
         observacoes:     data.observacoes ?? '',
@@ -126,6 +130,7 @@ export default function Prescricoes() {
 
               <div className={styles.cardFooter}>
                 <span className={styles.footerDate}>Prescrito em {p.data}</span>
+                <span className={styles.footerDate}>Dr(a). {p.medico_nome} — CRM {p.medico_crm}</span>
               </div>
             </div>
           ))}
@@ -153,6 +158,19 @@ export default function Prescricoes() {
                 <label>Paciente *</label>
                 <input {...register('paciente')} placeholder="Nome do paciente" autoFocus />
                 {errors.paciente && <span className={styles.error}>{errors.paciente.message}</span>}
+              </div>
+
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label>Médico Prescritor *</label>
+                  <input {...register('medico_nome')} placeholder="Nome do médico" />
+                  {errors.medico_nome && <span className={styles.error}>{errors.medico_nome.message}</span>}
+                </div>
+                <div className={styles.field}>
+                  <label>CRM *</label>
+                  <input {...register('medico_crm')} placeholder="Ex: 123456-SP" />
+                  {errors.medico_crm && <span className={styles.error}>{errors.medico_crm.message}</span>}
+                </div>
               </div>
 
               <div className={styles.field}>
