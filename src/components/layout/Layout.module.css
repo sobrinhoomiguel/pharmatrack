@@ -9,7 +9,41 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-bg);
+  position: relative;
+
+  /* Fundo: azul acinzentado levíssimo */
+  background-color: #eef1f8;
+
+  /* Grid cartesiana sutil */
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(30, 60, 160, 0.055) 0px,
+      rgba(30, 60, 160, 0.055) 0.5px,
+      transparent 0.5px,
+      transparent 32px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(30, 60, 160, 0.055) 0px,
+      rgba(30, 60, 160, 0.055) 0.5px,
+      transparent 0.5px,
+      transparent 32px
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(30, 60, 160, 0.10) 0px,
+      rgba(30, 60, 160, 0.10) 0.5px,
+      transparent 0.5px,
+      transparent 128px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(30, 60, 160, 0.10) 0px,
+      rgba(30, 60, 160, 0.10) 0.5px,
+      transparent 0.5px,
+      transparent 128px
+    );
 }
 
 .content {

@@ -79,8 +79,8 @@ export default function Dashboard() {
                   <XAxis dataKey="mes" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-text)', fontSize: 13 }} />
-                  <Bar dataKey="entradas" name="Entradas" fill="#2dd98f" radius={[4,4,0,0]} />
-                  <Bar dataKey="saidas"   name="Saídas"   fill="#14328C" radius={[4,4,0,0]} />
+                  <Bar dataKey="entradas" name="Entradas" fill="#57b78f" radius={[4,4,0,0]} />
+                  <Bar dataKey="saidas"   name="Saídas"   fill="#3152af" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             )
@@ -97,7 +97,7 @@ export default function Dashboard() {
                   <XAxis type="number" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis dataKey="nome" type="category" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} width={110} />
                   <Tooltip contentStyle={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-text)', fontSize: 13 }} />
-                  <Bar dataKey="quantidade" name="Unidades" fill="#14328C" radius={[0,4,4,0]} />
+                  <Bar dataKey="quantidade" name="Unidades" fill="#cf9247" radius={[0,4,4,0]} />
                 </BarChart>
               </ResponsiveContainer>
             )
