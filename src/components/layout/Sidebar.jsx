@@ -26,7 +26,7 @@ export default function Sidebar() {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
   }, [])
 
-  /* Anel de pulso animado no canvas */
+  /* Anel de pulso animado no canvas — versão discreta */
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -46,28 +46,14 @@ export default function Sidebar() {
       const cx = w / 2
       const cy = h * 0.16
 
-      /* Anel externo */
-      const r1 = 28 + 10 * Math.sin(t * 0.035)
-      const a1 = 0.055 + 0.03 * Math.sin(t * 0.035)
+      /* Anel único, sutil */
+      const r1 = 22 + 5 * Math.sin(t * 0.035)
+      const a1 = 0.025 + 0.015 * Math.sin(t * 0.035)
       ctx.beginPath()
       ctx.arc(cx, cy, r1, 0, Math.PI * 2)
       ctx.strokeStyle = `rgba(91,159,255,${a1})`
-      ctx.lineWidth = 0.8
+      ctx.lineWidth = 0.6
       ctx.stroke()
-
-      /* Anel interno */
-      const r2 = r1 * 0.5
-      ctx.beginPath()
-      ctx.arc(cx, cy, r2, 0, Math.PI * 2)
-      ctx.strokeStyle = `rgba(91,159,255,${a1 * 1.8})`
-      ctx.lineWidth = 0.5
-      ctx.stroke()
-
-      /* Ponto central */
-      ctx.beginPath()
-      ctx.arc(cx, cy, 2, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(91,159,255,${a1 * 4})`
-      ctx.fill()
 
       t++
       rafRef.current = requestAnimationFrame(tick)
@@ -84,9 +70,8 @@ export default function Sidebar() {
   return (
     <aside className={styles.sidebar}>
 
-      {/* Glows de profundidade */}
-      <div className={styles.glow}       aria-hidden="true" />
-      <div className={styles.glowBottom} aria-hidden="true" />
+      {/* Glow de profundidade */}
+      <div className={styles.glow} aria-hidden="true" />
 
       {/* Canvas do anel de pulso animado */}
       <canvas

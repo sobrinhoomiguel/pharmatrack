@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────
-   Sidebar — Grid Cartesiana + Azul Profissional
+   Sidebar — Azul Profissional, visual limpo
    ───────────────────────────────────────── */
 
 .sidebar {
@@ -14,66 +14,7 @@
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.30);
 }
 
-/* ── Grid cartesiana via SVG inline no pseudo-elemento ── */
-.sidebar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-
-  /* Grid via SVG URI: linhas finas a cada 24px */
-  background-image:
-    /* Linhas verticais finas */
-    repeating-linear-gradient(
-      to right,
-      rgba(255,255,255,0.04) 0px,
-      rgba(255,255,255,0.04) 0.5px,
-      transparent 0.5px,
-      transparent 24px
-    ),
-    /* Linhas horizontais finas */
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,0.04) 0px,
-      rgba(255,255,255,0.04) 0.5px,
-      transparent 0.5px,
-      transparent 24px
-    ),
-    /* Linhas de acento a cada 4 células (96px) - verticais */
-    repeating-linear-gradient(
-      to right,
-      rgba(91, 159, 255, 0.10) 0px,
-      rgba(91, 159, 255, 0.10) 0.5px,
-      transparent 0.5px,
-      transparent 96px
-    ),
-    /* Linhas de acento a cada 4 células (96px) - horizontais */
-    repeating-linear-gradient(
-      to bottom,
-      rgba(91, 159, 255, 0.10) 0px,
-      rgba(91, 159, 255, 0.10) 0.5px,
-      transparent 0.5px,
-      transparent 96px
-    );
-}
-
-/* Pontos nas interseções da grid */
-.sidebar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.18) 0.8px,
-    transparent 0.8px
-  );
-  background-size: 24px 24px;
-}
-
-/* Glow superior (halo de luz azul no topo) */
+/* Glow superior, sutil */
 .glow {
   position: absolute;
   top: -60px;
@@ -82,22 +23,14 @@
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(91,159,255,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(91,159,255,0.08) 0%, transparent 70%);
   pointer-events: none;
   z-index: 1;
 }
 
-/* Glow inferior */
+/* Glow inferior removido para um visual mais limpo */
 .glowBottom {
-  position: absolute;
-  bottom: 40px;
-  left: -30px;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(80,40,200,0.13) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 /* Conteúdo acima das camadas decorativas */
