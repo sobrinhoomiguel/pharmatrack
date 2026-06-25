@@ -297,3 +297,20 @@
   font-size: 11.5px;
   color: rgba(255, 255, 255, 0.20);
 }
+
+.registerLink {
+  text-align: center;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.28);
+  margin-top: 16px;
+}
+
+.registerLink a {
+  color: #8ab0e8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.registerLink a:hover {
+  text-decoration: underline;
+}

@@ -18,15 +18,6 @@ export default function Header() {
   return (
     <header className={styles.header}>
       <h1 className={styles.title}>{title}</h1>
-
-      <div className={styles.actions}>
-        <button className={styles.iconBtn} title="Pesquisar" aria-label="Pesquisar">
-          <Search size={18} />
-        </button>
-        <button className={styles.iconBtn} title="Notificações" aria-label="Notificações">
-          <Bell size={18} />
-        </button>
-      </div>
     </header>
   )
 }

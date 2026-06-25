@@ -1,9 +1,13 @@
 import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { Activity, Mail, Lock } from 'lucide-react'
-import { login } from '../../services/authService'
+import { useAuth } from '../../hooks/useAuth'
 import styles from './Login.module.css'
 
 export default function Login() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
+
   const [email, setEmail]     = useState('')
   const [senha, setSenha]     = useState('')
   const [erro, setErro]       = useState('')
@@ -13,12 +17,15 @@ export default function Login() {
     e.preventDefault()
     setErro('')
     setLoading(true)
-    try {
-      await login(email, senha)
-    } catch {
-      setErro('E-mail ou senha inválidos.')
-    } finally {
-      setLoading(false)
+
+    const result = await login(email, senha)
+
+    setLoading(false)
+
+    if (result.success) {
+      navigate('/', { replace: true })
+    } else {
+      setErro(result.error || 'E-mail ou senha inválidos.')
     }
   }
 
@@ -29,7 +36,6 @@ export default function Login() {
 
       <div className={styles.card}>
 
-        {/* Brand */}
         <div className={styles.brand}>
           <div className={styles.brandIcon}>
             <Activity size={18} strokeWidth={2.5} />
@@ -40,7 +46,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Heading */}
         <div className={styles.heading}>
           <h2>Bem-vindo de volta</h2>
           <p>Acesse sua conta para continuar</p>
@@ -48,7 +53,6 @@ export default function Login() {
 
         <div className={styles.divider} />
 
-        {/* Form */}
         <form className={styles.form} onSubmit={handleSubmit}>
 
           <div className={styles.field}>
@@ -72,7 +76,6 @@ export default function Login() {
           <div className={styles.field}>
             <div className={styles.fieldHeader}>
               <label htmlFor="senha">Senha</label>
-              <button type="button" className={styles.forgot}>Esqueceu?</button>
             </div>
             <div className={styles.inputWrap}>
               <span className={styles.inputIcon}>
@@ -97,11 +100,15 @@ export default function Login() {
 
         </form>
 
-        {/* Footer */}
+        <p className={styles.registerLink}>
+          Não tem conta? <Link to="/cadastro">Criar agora</Link>
+        </p>
+
         <div className={styles.cardFooter}>
           <span className={styles.cardFooterDot} aria-hidden="true" />
           <span className={styles.cardFooterText}>Conexão segura · PharmaTrack v2.0</span>
         </div>
+        
 
       </div>
     </div>

@@ -1,0 +1,408 @@
+/* Register.module.css */
+
+.page {
+  display: flex;
+  min-height: 100vh;
+  background: #f4f6fb;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Branding (esquerda) ─────────────────────────────────── */
+.brand {
+  width: 420px;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #1a2e5a 0%, #2d4a8a 60%, #3a5fa8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  flex-shrink: 0;
+}
+
+.brandInner {
+  color: #fff;
+  max-width: 320px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 48px;
+}
+
+.logoIcon {
+  font-size: 28px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.brandTitle {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 16px;
+}
+
+.brandSub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.6;
+  margin: 0 0 40px;
+}
+
+.brandFeatures {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.brandFeatures li {
+  font-size: 14px;
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Formulário (direita) ────────────────────────────────── */
+.formSide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.formCard {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+}
+
+/* ── Steps ───────────────────────────────────────────────── */
+.steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 36px;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.stepCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #d0d5e8;
+  background: #fff;
+  color: #8a94b0;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.stepLabel {
+  font-size: 12px;
+  color: #8a94b0;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.stepLine {
+  width: 40px;
+  height: 2px;
+  background: #d0d5e8;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+/* Active step */
+.stepActive .stepCircle {
+  border-color: #4e73c2;
+  background: #4e73c2;
+  color: #fff;
+}
+.stepActive .stepLabel {
+  color: #4e73c2;
+  font-weight: 600;
+}
+
+/* Done step */
+.stepDone .stepCircle {
+  border-color: #5bbf9a;
+  background: #5bbf9a;
+  color: #fff;
+}
+.stepDone .stepLabel {
+  color: #5bbf9a;
+}
+
+/* ── Conteúdo do step ────────────────────────────────────── */
+.stepContent {
+  animation: fadeIn 0.22s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.formTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2440;
+  margin: 0 0 4px;
+}
+
+.formSub {
+  font-size: 14px;
+  color: #8a94b0;
+  margin: 0 0 28px;
+}
+
+/* ── Campos ──────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a4460;
+}
+
+.field input {
+  height: 44px;
+  border: 1.5px solid #d8ddef;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #1a2440;
+  background: #fafbff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field input:focus {
+  border-color: #4e73c2;
+  box-shadow: 0 0 0 3px rgba(78,115,194,0.12);
+  background: #fff;
+}
+
+.field input::placeholder {
+  color: #b0b8d0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.optional {
+  font-weight: 400;
+  color: #b0b8d0;
+}
+
+/* Plan badge */
+.planBadge {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #f0f4ff;
+  border: 1.5px solid #d0daff;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+
+.planIcon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.planBadge strong {
+  font-size: 14px;
+  color: #1a2440;
+  font-weight: 600;
+}
+
+.planBadge p {
+  font-size: 12px;
+  color: #8a94b0;
+  margin: 3px 0 0;
+}
+
+/* ── Confirmação ─────────────────────────────────────────── */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.summarySection {
+  background: #f8f9fd;
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.summarySection h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #8a94b0;
+  margin: 0 0 12px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #3a4460;
+  padding: 4px 0;
+}
+
+.summaryRow span {
+  color: #8a94b0;
+}
+
+.badge {
+  background: #4e73c2;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* ── Erro ────────────────────────────────────────────────── */
+.error {
+  background: #fff0f0;
+  border: 1.5px solid #f5b8b8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #c0392b;
+  margin: 16px 0 0;
+}
+
+/* ── Ações ───────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.btnPrimary,
+.btnSecondary {
+  flex: 1;
+  height: 46px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.18s;
+}
+
+.btnPrimary {
+  background: #4e73c2;
+  color: #fff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #3d5fa8;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: #f0f2fa;
+  color: #4e73c2;
+  border: 1.5px solid #d0daff;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: #e4eaf9;
+}
+
+/* Spinner */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loginLink {
+  text-align: center;
+  font-size: 13px;
+  color: #8a94b0;
+  margin: 20px 0 0;
+}
+
+.loginLink a {
+  color: #4e73c2;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.loginLink a:hover {
+  text-decoration: underline;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .brand { display: none; }
+  .formSide { padding: 20px 16px; }
+  .formCard { padding: 28px 20px; }
+  .row { grid-template-columns: 1fr; }
+  .stepLine { width: 24px; }
+}

@@ -1,47 +1,45 @@
+// src/services/prescricoesService.js
+// RLS filtra company_id automaticamente — sem necessidade de getCompanyId
+
 import { supabase } from './supabase'
-import { getCompanyId } from './getCompanyId'
 
-// LISTAR PRESCRIÇÕES
 export const getPrescricoes = async () => {
-  const companyId = await getCompanyId()
-
   const { data, error } = await supabase
     .from('prescricoes')
     .select('*')
-    .eq('company_id', companyId)
     .order('created_at', { ascending: false })
 
   if (error) throw error
   return data
 }
 
-// CRIAR PRESCRIÇÃO
 export const createPrescricao = async (pres) => {
-  const companyId = await getCompanyId()
+  // Pega company_id da view do usuário logado
+  const { data: perfil, error: perfilError } = await supabase
+    .from('my_profile')
+    .select('company_id')
+    .single()
+
+  if (perfilError) throw perfilError
 
   const { data, error } = await supabase
     .from('prescricoes')
-    .insert([{
-      ...pres,
-      company_id: companyId
-    }])
+    .insert([{ ...pres, company_id: perfil.company_id }])
     .select()
+    .single()
 
   if (error) throw error
-  return data[0]
+  return data
 }
 
-// ATUALIZAR PRESCRIÇÃO
 export const updatePrescricao = async (id, pres) => {
-  const companyId = await getCompanyId()
-
   const { data, error } = await supabase
     .from('prescricoes')
     .update(pres)
     .eq('id', id)
-    .eq('company_id', companyId)
     .select()
+    .single()
 
   if (error) throw error
-  return data[0]
+  return data
 }

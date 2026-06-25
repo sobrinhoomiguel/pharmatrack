@@ -1,78 +1,54 @@
+// src/services/medicamentosService.js
+// RLS já filtra por company_id automaticamente — não precisa passar manual
+
 import { supabase } from './supabase'
 
-// Função auxiliar para pegar a empresa do usuário logado
-export const getCompanyId = async () => {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-
-  if (userError) throw userError
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', userData.user.id)
-    .single()
-
-  if (error) throw error
-
-  return data.company_id
-}
-
-// LISTAR MEDICAMENTOS
 export const getMedicamentos = async () => {
-  const companyId = await getCompanyId()
-
   const { data, error } = await supabase
     .from('medicamentos')
     .select('*')
-    .eq('company_id', companyId)
-    .order('created_at', { ascending: false })
+    .order('nome', { ascending: true })
 
   if (error) throw error
   return data
 }
 
-// CRIAR MEDICAMENTO
-export const createMedicamento = async (med) => {
-  const companyId = await getCompanyId()
+export const createMedicamento = async (campos) => {
+  // Pega company_id do profile do usuário logado via view
+  const { data: perfil, error: perfilError } = await supabase
+    .from('my_profile')
+    .select('company_id')
+    .single()
+
+  if (perfilError) throw perfilError
 
   const { data, error } = await supabase
     .from('medicamentos')
-    .insert([
-      {
-        ...med,
-        company_id: companyId
-      }
-    ])
+    .insert({ ...campos, company_id: perfil.company_id })
     .select()
+    .single()
 
   if (error) throw error
-  return data[0]
+  return data
 }
 
-// ATUALIZAR MEDICAMENTO
-export const updateMedicamento = async (id, med) => {
-  const companyId = await getCompanyId()
-
+export const updateMedicamento = async (id, campos) => {
   const { data, error } = await supabase
     .from('medicamentos')
-    .update(med)
+    .update(campos)
     .eq('id', id)
-    .eq('company_id', companyId)
     .select()
+    .single()
 
   if (error) throw error
-  return data[0]
+  return data
 }
 
-// DELETAR MEDICAMENTO
 export const deleteMedicamento = async (id) => {
-  const companyId = await getCompanyId()
-
   const { error } = await supabase
     .from('medicamentos')
     .delete()
     .eq('id', id)
-    .eq('company_id', companyId)
 
   if (error) throw error
 }
