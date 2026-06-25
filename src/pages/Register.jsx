@@ -1,6 +1,4 @@
 // src/pages/Register.jsx
-// Cadastro SaaS completo: cria empresa + admin num único fluxo
-
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -8,43 +6,66 @@ import styles from './Register.module.css';
 
 const STEPS = ['Conta', 'Empresa', 'Confirmar'];
 
+function maskCnpj(value) {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 14)
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+}
+
+function validarCnpj(cnpj) {
+  const n = cnpj.replace(/\D/g, '')
+  if (n.length !== 14) return false
+  if (/^(\d)\1+$/.test(n)) return false
+  const calc = (x) => {
+    const slice = n.slice(0, x)
+    let sum = 0, pos = x - 7
+    for (let i = x; i >= 1; i--) {
+      sum += parseInt(slice[x - i]) * pos--
+      if (pos < 2) pos = 9
+    }
+    return sum % 11 < 2 ? 0 : 11 - (sum % 11)
+  }
+  return calc(12) === parseInt(n[12]) && calc(13) === parseInt(n[13])
+}
+
 export default function Register() {
   const navigate = useNavigate();
   const { registerCompany, error: authError, setError } = useAuth();
 
-  const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [step, setStep]             = useState(0);
+  const [loading, setLoading]       = useState(false);
   const [localError, setLocalError] = useState('');
 
   const [form, setForm] = useState({
-    // Step 0 — Conta
-    nome:            '',
-    email:           '',
-    password:        '',
-    passwordConfirm: '',
-    // Step 1 — Empresa
-    companyNome:     '',
-    companyCnpj:     '',
+    nome: '', email: '', password: '', passwordConfirm: '',
+    companyNome: '', companyCnpj: '',
   });
 
   function handleChange(e) {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === 'companyCnpj') value = maskCnpj(value);
     setForm(prev => ({ ...prev, [name]: value }));
     setLocalError('');
     setError(null);
   }
 
-  // ── Validações por step ──
   function validateStep() {
     if (step === 0) {
-      if (!form.nome.trim())                        return 'Informe seu nome.';
-      if (!form.email.trim())                       return 'Informe seu email.';
-      if (!/\S+@\S+\.\S+/.test(form.email))         return 'Email inválido.';
-      if (form.password.length < 6)                 return 'Senha deve ter no mínimo 6 caracteres.';
-      if (form.password !== form.passwordConfirm)   return 'As senhas não coincidem.';
+      if (!form.nome.trim())                      return 'Informe seu nome.';
+      if (form.nome.trim().length < 3)            return 'Nome deve ter ao menos 3 caracteres.';
+      if (!form.email.trim())                     return 'Informe seu email.';
+      if (!/\S+@\S+\.\S+/.test(form.email))       return 'Email inválido.';
+      if (form.password.length < 8)               return 'Senha deve ter no mínimo 8 caracteres.';
+      if (form.password !== form.passwordConfirm) return 'As senhas não coincidem.';
     }
     if (step === 1) {
-      if (!form.companyNome.trim())                 return 'Informe o nome da farmácia.';
+      if (!form.companyNome.trim())               return 'Informe o nome da farmácia.';
+      if (form.companyNome.trim().length < 3)     return 'Nome da farmácia muito curto.';
+      if (form.companyCnpj && !validarCnpj(form.companyCnpj)) return 'CNPJ inválido.';
     }
     return null;
   }
@@ -60,7 +81,6 @@ export default function Register() {
     setStep(s => s - 1);
   }
 
-  // ── Submit final ──
   async function handleSubmit() {
     setLoading(true);
     setLocalError('');
@@ -76,10 +96,10 @@ export default function Register() {
     setLoading(false);
 
     if (result.success) {
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } else {
       setLocalError(authError || 'Erro ao criar conta. Tente novamente.');
-      setStep(0); // volta pro início se auth falhou
+      setStep(0);
     }
   }
 
@@ -87,11 +107,11 @@ export default function Register() {
 
   return (
     <div className={styles.page}>
-      {/* ── Lado esquerdo (branding) ── */}
+
       <div className={styles.brand}>
         <div className={styles.brandInner}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>⚕</span>
+            <div className={styles.logoIcon}>P</div>
             <span className={styles.logoText}>PharmaTrack</span>
           </div>
           <h1 className={styles.brandTitle}>
@@ -101,27 +121,20 @@ export default function Register() {
             Controle de estoque, prescrições e relatórios — tudo em um lugar.
           </p>
           <ul className={styles.brandFeatures}>
-            <li>✓ Controle de medicamentos e validades</li>
-            <li>✓ Gestão de prescrições</li>
-            <li>✓ Relatórios com exportação Excel</li>
-            <li>✓ Multi-usuários por empresa</li>
+            <li>Controle de medicamentos e validades</li>
+            <li>Gestão de prescrições</li>
+            <li>Relatórios com exportação Excel</li>
+            <li>Multi-usuários por empresa</li>
           </ul>
         </div>
       </div>
 
-      {/* ── Lado direito (form) ── */}
       <div className={styles.formSide}>
         <div className={styles.formCard}>
-          {/* Progresso */}
+
           <div className={styles.steps}>
             {STEPS.map((label, i) => (
-              <div
-                key={label}
-                className={`${styles.stepItem} ${
-                  i === step ? styles.stepActive :
-                  i < step   ? styles.stepDone   : ''
-                }`}
-              >
+              <div key={label} className={`${styles.stepItem} ${i === step ? styles.stepActive : i < step ? styles.stepDone : ''}`}>
                 <div className={styles.stepCircle}>{i < step ? '✓' : i + 1}</div>
                 <span className={styles.stepLabel}>{label}</span>
                 {i < STEPS.length - 1 && <div className={styles.stepLine} />}
@@ -129,7 +142,6 @@ export default function Register() {
             ))}
           </div>
 
-          {/* ── Step 0: Dados pessoais ── */}
           {step === 0 && (
             <div className={styles.stepContent}>
               <h2 className={styles.formTitle}>Crie sua conta</h2>
@@ -137,49 +149,39 @@ export default function Register() {
 
               <div className={styles.field}>
                 <label htmlFor="nome">Nome completo</label>
-                <input
-                  id="nome" name="nome" type="text"
+                <input id="nome" name="nome" type="text"
                   placeholder="João Silva"
-                  value={form.nome}
-                  onChange={handleChange}
-                  autoFocus
-                />
+                  value={form.nome} onChange={handleChange}
+                  autoFocus maxLength={80} />
               </div>
 
               <div className={styles.field}>
                 <label htmlFor="email">Email</label>
-                <input
-                  id="email" name="email" type="email"
+                <input id="email" name="email" type="email"
                   placeholder="joao@farmacia.com"
-                  value={form.email}
-                  onChange={handleChange}
-                />
+                  value={form.email} onChange={handleChange}
+                  maxLength={120} />
               </div>
 
               <div className={styles.row}>
                 <div className={styles.field}>
                   <label htmlFor="password">Senha</label>
-                  <input
-                    id="password" name="password" type="password"
-                    placeholder="Mín. 6 caracteres"
-                    value={form.password}
-                    onChange={handleChange}
-                  />
+                  <input id="password" name="password" type="password"
+                    placeholder="Mín. 8 caracteres"
+                    value={form.password} onChange={handleChange}
+                    maxLength={64} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="passwordConfirm">Confirmar senha</label>
-                  <input
-                    id="passwordConfirm" name="passwordConfirm" type="password"
+                  <input id="passwordConfirm" name="passwordConfirm" type="password"
                     placeholder="Repita a senha"
-                    value={form.passwordConfirm}
-                    onChange={handleChange}
-                  />
+                    value={form.passwordConfirm} onChange={handleChange}
+                    maxLength={64} />
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── Step 1: Dados da empresa ── */}
           {step === 1 && (
             <div className={styles.stepContent}>
               <h2 className={styles.formTitle}>Sua farmácia</h2>
@@ -187,38 +189,24 @@ export default function Register() {
 
               <div className={styles.field}>
                 <label htmlFor="companyNome">Nome da farmácia *</label>
-                <input
-                  id="companyNome" name="companyNome" type="text"
+                <input id="companyNome" name="companyNome" type="text"
                   placeholder="Farmácia Central Ltda."
-                  value={form.companyNome}
-                  onChange={handleChange}
-                  autoFocus
-                />
+                  value={form.companyNome} onChange={handleChange}
+                  autoFocus maxLength={100} />
               </div>
 
               <div className={styles.field}>
                 <label htmlFor="companyCnpj">
                   CNPJ <span className={styles.optional}>(opcional)</span>
                 </label>
-                <input
-                  id="companyCnpj" name="companyCnpj" type="text"
+                <input id="companyCnpj" name="companyCnpj" type="text"
                   placeholder="00.000.000/0001-00"
-                  value={form.companyCnpj}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className={styles.planBadge}>
-                <span className={styles.planIcon}>🆓</span>
-                <div>
-                  <strong>Plano Free</strong>
-                  <p>Você pode fazer upgrade a qualquer momento</p>
-                </div>
+                  value={form.companyCnpj} onChange={handleChange}
+                  maxLength={18} />
               </div>
             </div>
           )}
 
-          {/* ── Step 2: Confirmação ── */}
           {step === 2 && (
             <div className={styles.stepContent}>
               <h2 className={styles.formTitle}>Confirmar cadastro</h2>
@@ -227,77 +215,39 @@ export default function Register() {
               <div className={styles.summary}>
                 <div className={styles.summarySection}>
                   <h3>Conta</h3>
-                  <div className={styles.summaryRow}>
-                    <span>Nome</span><strong>{form.nome}</strong>
-                  </div>
-                  <div className={styles.summaryRow}>
-                    <span>Email</span><strong>{form.email}</strong>
-                  </div>
-                  <div className={styles.summaryRow}>
-                    <span>Perfil</span><strong className={styles.badge}>Admin</strong>
-                  </div>
+                  <div className={styles.summaryRow}><span>Nome</span><strong>{form.nome}</strong></div>
+                  <div className={styles.summaryRow}><span>Email</span><strong>{form.email}</strong></div>
+                  <div className={styles.summaryRow}><span>Perfil</span><strong className={styles.badge}>Admin</strong></div>
                 </div>
-
                 <div className={styles.summarySection}>
                   <h3>Farmácia</h3>
-                  <div className={styles.summaryRow}>
-                    <span>Nome</span><strong>{form.companyNome}</strong>
-                  </div>
+                  <div className={styles.summaryRow}><span>Nome</span><strong>{form.companyNome}</strong></div>
                   {form.companyCnpj && (
-                    <div className={styles.summaryRow}>
-                      <span>CNPJ</span><strong>{form.companyCnpj}</strong>
-                    </div>
+                    <div className={styles.summaryRow}><span>CNPJ</span><strong>{form.companyCnpj}</strong></div>
                   )}
-                  <div className={styles.summaryRow}>
-                    <span>Plano</span><strong>Free</strong>
-                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Erro */}
           {displayError && (
-            <div className={styles.error} role="alert">
-              {displayError}
-            </div>
+            <div className={styles.error} role="alert">{displayError}</div>
           )}
 
-          {/* Botões de navegação */}
           <div className={styles.actions}>
             {step > 0 && (
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={prevStep}
-                disabled={loading}
-              >
+              <button type="button" className={styles.btnSecondary} onClick={prevStep} disabled={loading}>
                 Voltar
               </button>
             )}
-
             {step < 2 && (
-              <button
-                type="button"
-                className={styles.btnPrimary}
-                onClick={nextStep}
-              >
+              <button type="button" className={styles.btnPrimary} onClick={nextStep}>
                 Continuar
               </button>
             )}
-
             {step === 2 && (
-              <button
-                type="button"
-                className={styles.btnPrimary}
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className={styles.spinner} />
-                ) : (
-                  'Criar conta'
-                )}
+              <button type="button" className={styles.btnPrimary} onClick={handleSubmit} disabled={loading}>
+                {loading ? <span className={styles.spinner} /> : 'Criar conta'}
               </button>
             )}
           </div>
