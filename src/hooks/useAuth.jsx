@@ -1,5 +1,5 @@
 // src/hooks/useAuth.jsx
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { supabase } from '../services/supabase';
 
 const AuthContext = createContext(null);
@@ -20,6 +20,7 @@ function useProvideAuth() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+  const inviting = useRef(false); // flag para ignorar eventos durante convite
 
   const fetchProfile = useCallback(async () => {
     const { data, error } = await supabase
@@ -49,8 +50,12 @@ function useProvideAuth() {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (!mounted) return;
+
+        // Ignora eventos disparados durante o convite de usuário
+        if (inviting.current) return;
+
         if (session?.user) {
           setUser(session.user);
           const prof = await fetchProfile();
@@ -131,7 +136,7 @@ function useProvideAuth() {
     return { success: true, companyId: rpcData?.company_id };
   }, [fetchProfile]);
 
-  // ── CONVIDAR USUÁRIO (via Edge Function — não afeta sessão) ──
+  // ── CONVIDAR USUÁRIO (via Edge Function) ───────────────
   const inviteUser = useCallback(async ({
     email, password, nome, role = 'usuario',
   }) => {
@@ -139,32 +144,39 @@ function useProvideAuth() {
 
     setError(null);
 
-    // Pega o token da sessão atual do admin
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { success: false, error: 'Sessão expirada' };
 
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey':        import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ email, password, nome, role }),
+    // Ativa flag para ignorar eventos do onAuthStateChange
+    inviting.current = true;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey':        import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ email, password, nome, role }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        const msg = translateInviteError(result.error);
+        setError(msg);
+        return { success: false, error: msg };
       }
-    );
 
-    const result = await res.json();
-
-    if (!res.ok || !result.success) {
-      const msg = translateInviteError(result.error);
-      setError(msg);
-      return { success: false, error: msg };
+      return { success: true };
+    } finally {
+      // Desativa flag após 2s (tempo para eventos do auth se resolverem)
+      setTimeout(() => { inviting.current = false; }, 2000);
     }
-
-    return { success: true };
   }, [profile]);
 
   // ── LOGOUT ─────────────────────────────────────────────
