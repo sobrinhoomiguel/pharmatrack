@@ -26,7 +26,6 @@ function useProvideAuth() {
       .from('my_profile')
       .select('*')
       .single();
-
     if (error) {
       console.error('[useAuth] fetchProfile error:', error.message);
       return null;
@@ -39,13 +38,11 @@ function useProvideAuth() {
 
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (session?.user && mounted) {
         setUser(session.user);
         const prof = await fetchProfile();
         if (mounted) setProfile(prof);
       }
-
       if (mounted) setLoading(false);
     }
 
@@ -54,7 +51,6 @@ function useProvideAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
-
         if (session?.user) {
           setUser(session.user);
           const prof = await fetchProfile();
@@ -77,15 +73,12 @@ function useProvideAuth() {
   const login = useCallback(async (email, password) => {
     setError(null);
     setLoading(true);
-
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
     if (error) {
       setLoading(false);
       setError(translateAuthError(error.message));
       return { success: false, error: error.message };
     }
-
     return { success: true, user: data.user };
   }, []);
 
@@ -97,9 +90,7 @@ function useProvideAuth() {
     setLoading(true);
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { nome } },
+      email, password, options: { data: { nome } },
     });
 
     if (authError) {
@@ -140,46 +131,41 @@ function useProvideAuth() {
     return { success: true, companyId: rpcData?.company_id };
   }, [fetchProfile]);
 
-  // ── CONVIDAR USUÁRIO ───────────────────────────────────
-const inviteUser = useCallback(async ({
-  email, password, nome, role = 'usuario',
-}) => {
-  if (!profile?.company_id) return { success: false, error: 'Sem empresa vinculada' }
+  // ── CONVIDAR USUÁRIO (via Edge Function — não afeta sessão) ──
+  const inviteUser = useCallback(async ({
+    email, password, nome, role = 'usuario',
+  }) => {
+    if (!profile?.company_id) return { success: false, error: 'Sem empresa vinculada' };
 
-  setError(null)
+    setError(null);
 
-  // 1. Cria usuário no Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  })
+    // Pega o token da sessão atual do admin
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { success: false, error: 'Sessão expirada' };
 
-  if (authError) {
-    setError(translateAuthError(authError.message))
-    return { success: false, error: authError.message }
-  }
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey':        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password, nome, role }),
+      }
+    );
 
-  const newUserId = authData.user?.id
-  if (!newUserId) return { success: false, error: 'Erro ao obter ID do usuário' }
+    const result = await res.json();
 
-  // 2. Aguarda o usuário ser persistido no banco
-  await new Promise(resolve => setTimeout(resolve, 1500))
+    if (!res.ok || !result.success) {
+      const msg = translateInviteError(result.error);
+      setError(msg);
+      return { success: false, error: msg };
+    }
 
-  // 3. Cria profile via security  definer
-  const { error: rpcError } = await supabase.rpc('admin_invite_user', {
-    p_user_id:    newUserId,
-    p_user_email: email,
-    p_user_nome:  nome,
-    p_role:       role,
-  })
-
-  if (rpcError) {
-    setError('Erro ao vincular usuário à empresa.')
-    return { success: false, error: rpcError.message }
-  }
-
-  return { success: true }
-}, [profile])
+    return { success: true };
+  }, [profile]);
 
   // ── LOGOUT ─────────────────────────────────────────────
   const logout = useCallback(async () => {
@@ -218,4 +204,13 @@ function translateAuthError(msg) {
     if (msg?.includes(key)) return value;
   }
   return 'Erro de autenticação. Tente novamente.';
+}
+
+function translateInviteError(msg) {
+  if (!msg) return 'Erro ao convidar usuário.';
+  if (msg.includes('Email já cadastrado'))  return 'Este email já está cadastrado no sistema.';
+  if (msg.includes('Permissão negada'))     return 'Você não tem permissão para convidar usuários.';
+  if (msg.includes('Dados incompletos'))    return 'Preencha todos os campos obrigatórios.';
+  if (msg.includes('Sessão expirada'))      return 'Sua sessão expirou. Faça login novamente.';
+  return msg;
 }
