@@ -165,7 +165,7 @@ const inviteUser = useCallback(async ({
   // 2. Aguarda o usuário ser persistido no banco
   await new Promise(resolve => setTimeout(resolve, 1500))
 
-  // 3. Cria profile via security definer
+  // 3. Cria profile via security  definer
   const { error: rpcError } = await supabase.rpc('admin_invite_user', {
     p_user_id:    newUserId,
     p_user_email: email,
