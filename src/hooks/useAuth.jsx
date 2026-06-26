@@ -1,11 +1,7 @@
-// src/hooks/useAuth.js
-// Hook central de autenticação do PharmaTrack SaaS
-// Gerencia: login, logout, sessão, profile + empresa
-
+// src/hooks/useAuth.jsx
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../services/supabase';
 
-// ─── Context ───────────────────────────────────────────────
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -19,17 +15,13 @@ export function useAuth() {
   return ctx;
 }
 
-// ─── Hook principal ────────────────────────────────────────
 function useProvideAuth() {
-  const [user,    setUser]    = useState(null);   // auth.users
-  const [profile, setProfile] = useState(null);   // profiles + company
+  const [user,    setUser]    = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  // ── Busca o perfil completo (view my_profile) ──
-  const fetchProfile = useCallback(async (userId) => {
-    if (!userId) return null;
-
+  const fetchProfile = useCallback(async () => {
     const { data, error } = await supabase
       .from('my_profile')
       .select('*')
@@ -42,7 +34,6 @@ function useProvideAuth() {
     return data;
   }, []);
 
-  // ── Inicializa sessão existente ──
   useEffect(() => {
     let mounted = true;
 
@@ -51,7 +42,7 @@ function useProvideAuth() {
 
       if (session?.user && mounted) {
         setUser(session.user);
-        const prof = await fetchProfile(session.user.id);
+        const prof = await fetchProfile();
         if (mounted) setProfile(prof);
       }
 
@@ -60,14 +51,13 @@ function useProvideAuth() {
 
     init();
 
-    // Listener de mudanças de sessão
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
 
         if (session?.user) {
           setUser(session.user);
-          const prof = await fetchProfile(session.user.id);
+          const prof = await fetchProfile();
           setProfile(prof);
         } else {
           setUser(null);
@@ -96,28 +86,20 @@ function useProvideAuth() {
       return { success: false, error: error.message };
     }
 
-    // Profile é carregado pelo onAuthStateChange
     return { success: true, user: data.user };
   }, []);
 
-  // ── REGISTRO SaaS (empresa nova + admin) ───────────────
+  // ── REGISTRO SaaS ──────────────────────────────────────
   const registerCompany = useCallback(async ({
-    email,
-    password,
-    nome,
-    companyNome,
-    companyCnpj = null,
+    email, password, nome, companyNome, companyCnpj = null,
   }) => {
     setError(null);
     setLoading(true);
 
-    // 1. Cria usuário no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { nome }, // metadata extra (opcional)
-      },
+      options: { data: { nome } },
     });
 
     if (authError) {
@@ -133,7 +115,6 @@ function useProvideAuth() {
       return { success: false, error: 'no_user_id' };
     }
 
-    // 2. Chama RPC que cria empresa + profile (security definer)
     const { data: rpcData, error: rpcError } = await supabase.rpc(
       'register_company_and_admin',
       {
@@ -146,62 +127,59 @@ function useProvideAuth() {
     );
 
     if (rpcError) {
-      // Auth foi criado mas profile falhou → tenta limpar
       await supabase.auth.signOut();
       setLoading(false);
       setError('Erro ao configurar empresa. Tente novamente.');
       return { success: false, error: rpcError.message };
     }
 
-    // 3. Busca profile completo
-    const prof = await fetchProfile(userId);
+    const prof = await fetchProfile();
     setProfile(prof);
     setLoading(false);
 
     return { success: true, companyId: rpcData?.company_id };
   }, [fetchProfile]);
 
-  // ── CONVIDAR USUÁRIO (admin convida membro) ───────────
-  const inviteUser = useCallback(async ({
+  // ── CONVIDAR USUÁRIO ───────────────────────────────────
+const inviteUser = useCallback(async ({
+  email, password, nome, role = 'usuario',
+}) => {
+  if (!profile?.company_id) return { success: false, error: 'Sem empresa vinculada' }
+
+  setError(null)
+
+  // 1. Cria usuário no Auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
-    nome,
-    role = 'usuario',
-  }) => {
-    if (!profile?.company_id) return { success: false, error: 'Sem empresa vinculada' };
+  })
 
-    setError(null);
+  if (authError) {
+    setError(translateAuthError(authError.message))
+    return { success: false, error: authError.message }
+  }
 
-    // 1. Admin cria o auth do novo usuário via Admin API (requer service_role no backend)
-    // No frontend, usamos signUp normal + invite via RPC
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+  const newUserId = authData.user?.id
+  if (!newUserId) return { success: false, error: 'Erro ao obter ID do usuário' }
 
-    if (authError) {
-      setError(translateAuthError(authError.message));
-      return { success: false, error: authError.message };
-    }
+  // 2. Aguarda o usuário ser persistido no banco
+  await new Promise(resolve => setTimeout(resolve, 1500))
 
-    const newUserId = authData.user?.id;
+  // 3. Cria profile via security definer
+  const { error: rpcError } = await supabase.rpc('admin_invite_user', {
+    p_user_id:    newUserId,
+    p_user_email: email,
+    p_user_nome:  nome,
+    p_role:       role,
+  })
 
-    // 2. RPC vincula o novo usuário à empresa do admin
-    const { error: rpcError } = await supabase.rpc('invite_user_to_company', {
-      p_user_id:    newUserId,
-      p_user_email: email,
-      p_user_nome:  nome,
-      p_company_id: profile.company_id,
-      p_role:       role,
-    });
+  if (rpcError) {
+    setError('Erro ao vincular usuário à empresa.')
+    return { success: false, error: rpcError.message }
+  }
 
-    if (rpcError) {
-      setError('Erro ao vincular usuário à empresa.');
-      return { success: false, error: rpcError.message };
-    }
-
-    return { success: true };
-  }, [profile]);
+  return { success: true }
+}, [profile])
 
   // ── LOGOUT ─────────────────────────────────────────────
   const logout = useCallback(async () => {
@@ -212,49 +190,30 @@ function useProvideAuth() {
 
   // ── REFRESH PROFILE ────────────────────────────────────
   const refreshProfile = useCallback(async () => {
-    if (!user?.id) return;
-    const prof = await fetchProfile(user.id);
+    const prof = await fetchProfile();
     setProfile(prof);
-  }, [user, fetchProfile]);
+  }, [fetchProfile]);
 
-  // ── Helpers de permissão ───────────────────────────────
-  const isAdmin       = profile?.role === 'admin' || profile?.role === 'superadmin';
+  const isAdmin        = profile?.role === 'admin' || profile?.role === 'superadmin';
   const isFarmaceutico = profile?.role === 'farmaceutico';
-  const companyAtiva  = profile?.company_status === 'ativo';
+  const companyAtiva   = profile?.company_status === 'ativo';
 
   return {
-    // Estado
-    user,
-    profile,
-    loading,
-    error,
+    user, profile, loading, error,
     isAuthenticated: !!user && !!profile,
-
-    // Permissões
-    isAdmin,
-    isFarmaceutico,
-    companyAtiva,
-
-    // Ações
-    login,
-    logout,
-    registerCompany,
-    inviteUser,
-    refreshProfile,
-    setError,
+    isAdmin, isFarmaceutico, companyAtiva,
+    login, logout, registerCompany, inviteUser, refreshProfile, setError,
   };
 }
 
-// ── Tradução de erros do Supabase ──────────────────────────
 function translateAuthError(msg) {
   const map = {
-    'Invalid login credentials':            'Email ou senha incorretos.',
-    'Email not confirmed':                  'Confirme seu email antes de entrar.',
-    'User already registered':              'Este email já está cadastrado.',
+    'Invalid login credentials':                'Email ou senha incorretos.',
+    'Email not confirmed':                      'Confirme seu email antes de entrar.',
+    'User already registered':                  'Este email já está cadastrado.',
     'Password should be at least 6 characters': 'A senha deve ter no mínimo 6 caracteres.',
-    'signup_disabled':                      'Novos cadastros estão desabilitados.',
+    'signup_disabled':                          'Novos cadastros estão desabilitados.',
   };
-
   for (const [key, value] of Object.entries(map)) {
     if (msg?.includes(key)) return value;
   }
