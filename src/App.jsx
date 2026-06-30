@@ -5,7 +5,6 @@ import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute'
 
 import Layout       from './components/layout/Layout'
 import Login        from './pages/Login/Login'
-import Register     from './pages/Register'
 import Dashboard    from './pages/Dashboard/Dashboard'
 import Medicamentos from './pages/Medicamentos/Medicamentos'
 import Estoque      from './pages/Estoque/Estoque'
@@ -20,11 +19,9 @@ export default function App() {
         <Routes>
 
           {/* ── Públicas ── */}
+          {/* Cadastro público desativado: acesso é liberado apenas via convite (Usuários > Convidar) */}
           <Route path="/login" element={
             <PublicRoute><Login /></PublicRoute>
-          } />
-          <Route path="/cadastro" element={
-            <PublicRoute><Register /></PublicRoute>
           } />
 
           {/* ── Protegidas com Layout ── */}

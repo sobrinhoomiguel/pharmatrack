@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Activity, Mail, Lock } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './Login.module.css'
@@ -100,15 +100,14 @@ export default function Login() {
 
         </form>
 
-        <p className={styles.registerLink}>
-          Não tem conta? <Link to="/cadastro">Criar agora</Link>
+        <p className={styles.accessNote}>
+          Acesso restrito. Em caso de dúvida, contate o administrador da sua farmácia.
         </p>
 
         <div className={styles.cardFooter}>
           <span className={styles.cardFooterDot} aria-hidden="true" />
           <span className={styles.cardFooterText}>Conexão segura · PharmaTrack v2.0</span>
         </div>
-        
 
       </div>
     </div>
